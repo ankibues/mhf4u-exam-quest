@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>MHF4U Exam Quest — Master the Steps</title>
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: radial-gradient(circle at top, #0b1d33, #02040a);
+  color: #e6edf3;
+}
+header {
+  padding: 24px;
+  font-size: 28px;
+  font-weight: 700;
+}
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.card {
+  background: rgba(255,255,255,0.04);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+button {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #e6edf3;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+button:hover { background: rgba(255,255,255,0.15); }
+.choice {
+  padding: 14px;
+  border-radius: 12px;
+  margin: 10px 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+.choice.correct {
+  background: rgba(0,180,120,0.25);
+  border-color: #2dd4bf;
+}
+.choice.wrong {
+  background: rgba(180,40,60,0.25);
+  border-color: #fb7185;
+}
+.feedback {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+}
+.progress {
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.tag {
+  opacity: 0.7;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+<header>MHF4U Exam Quest — Master the Steps</header>
+<div class="container">
+  <div id="app"></div>
+</div>
+
+<script>
+/* ---------------- STATE ---------------- */
+let screen = "list"; // list | problem
+let currentProblem = null;
+let stepIndex = 0;
+let lastClick = null;
+let awaitingNext = false;
+
+/* ---------------- SOUNDS ---------------- */
+const correctSound = new Audio("correct.mp3");
+const wrongSound   = new Audio("wrong.mp3");
+
+// Prevent overlapping noise
+correctSound.volume = 0.6;
+wrongSound.volume = 0.6;
+/* ---------------- PROGRESS ---------------- */
+function loadProgress() {
+  return JSON.parse(localStorage.getItem("mhf4u-progress") || "{}");
+}
+function saveProgress(p) {
+  localStorage.setItem("mhf4u-progress", JSON.stringify(p));
+}
+
+/* ---------------- PROBLEMS (10) ---------------- */
+const PROBLEMS = [
+
+/* =========================
+   EXPONENTIAL & LOGARITHMIC (12)
+========================= */
+
+{
+  id: "log-1",
+  topic: "Logarithms",
+  title: "Quotient Law",
+  stages: [
+    {
+      prompt: "Simplify: log(12x²) − log(3x)",
+      question: "First step?",
+      choices: [
+        ["Use quotient law", true, "Difference of logs → quotient"],
+        ["Expand powers", false, "Do after combining"],
+        ["Cancel logs", false, "Not allowed"],
+        ["Plug values", false, "Symbolic work needed"]
+      ]
+    },
+    {
+      question: "Final form?",
+      choices: [
+        ["log(4x)", true, "12x² ÷ 3x = 4x"],
+        ["log(9x)", false, "Arithmetic error"],
+        ["log(4x²)", false, "Exponent error"],
+        ["log(x)", false, "Missing factor"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "log-2",
+  topic: "Logarithms",
+  title: "Power Law",
+  stages: [
+    {
+      prompt: "Simplify: log(x⁶)",
+      question: "Which law?",
+      choices: [
+        ["Power law", true, "Exponent becomes coefficient"],
+        ["Product law", false, "Single term"],
+        ["Quotient law", false, "No division"],
+        ["No law", false, "Incorrect"]
+      ]
+    },
+    {
+      question: "Final answer?",
+      choices: [
+        ["6log(x)", true, "Correct"],
+        ["log(6x)", false, "Incorrect"],
+        ["log(x)", false, "Exponent missing"],
+        ["xlog(6)", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "log-3",
+  topic: "Logarithms",
+  title: "Restrictions",
+  stages: [
+    {
+      prompt: "State restrictions: log(x−4)",
+      question: "Argument must be:",
+      choices: [
+        ["Positive", true, "Log undefined for ≤0"],
+        ["Negative", false, "Incorrect"],
+        ["Zero", false, "Undefined"],
+        ["Any real", false, "Incorrect"]
+      ]
+    },
+    {
+      question: "Restriction?",
+      choices: [
+        ["x > 4", true, "x−4 > 0"],
+        ["x ≠ 4", false, "Too weak"],
+        ["x ≥ 4", false, "Includes 0"],
+        ["x < 4", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "exp-1",
+  topic: "Exponentials",
+  title: "Solve Exponential",
+  stages: [
+    {
+      prompt: "Solve: 2^(x+2) = 32",
+      question: "Rewrite 32",
+      choices: [
+        ["2⁵", true, "32 = 2⁵"],
+        ["4⁵", false, "Incorrect"],
+        ["8²", false, "Incorrect"],
+        ["Cannot rewrite", false, "Incorrect"]
+      ]
+    },
+    {
+      question: "Value of x?",
+      choices: [
+        ["3", true, "x+2=5"],
+        ["5", false, "Forgot −2"],
+        ["2", false, "Incorrect"],
+        ["1", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "exp-2",
+  topic: "Exponentials",
+  title: "Growth vs Decay",
+  stages: [
+    {
+      prompt: "f(x)=3(0.8)^x represents:",
+      question: "Type of function?",
+      choices: [
+        ["Exponential decay", true, "Base < 1"],
+        ["Linear decay", false, "Not linear"],
+        ["Exponential growth", false, "Base < 1"],
+        ["Quadratic", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "log-4",
+  topic: "Logarithms",
+  title: "Product Law",
+  stages: [
+    {
+      prompt: "Simplify: log(2x)",
+      question: "Apply product law",
+      choices: [
+        ["log(2)+log(x)", true, "Correct"],
+        ["log(2x)", false, "Not simplified"],
+        ["2log(x)", false, "Incorrect"],
+        ["xlog(2)", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "exp-3",
+  topic: "Exponentials",
+  title: "Solve with Logs",
+  stages: [
+    {
+      prompt: "Solve: 5^x = 12",
+      question: "What is required?",
+      choices: [
+        ["Use logarithms", true, "Bases differ"],
+        ["Rewrite base", false, "Impossible"],
+        ["Guess value", false, "Not exact"],
+        ["No solution", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "log-5",
+  topic: "Logarithms",
+  title: "Change of Base",
+  stages: [
+    {
+      prompt: "Evaluate: log₂(8)",
+      question: "Rewrite using base 10",
+      choices: [
+        ["log(8)/log(2)", true, "Change of base"],
+        ["log(2)/log(8)", false, "Inverted"],
+        ["2log(8)", false, "Incorrect"],
+        ["log(16)", false, "Incorrect"]
+      ]
+    },
+    {
+      question: "Final value?",
+      choices: [
+        ["3", true, "2³=8"],
+        ["2", false, "Incorrect"],
+        ["4", false, "Incorrect"],
+        ["1", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "exp-4",
+  topic: "Exponentials",
+  title: "Compound Interest",
+  stages: [
+    {
+      prompt: "Which formula models compound interest?",
+      question: "Correct formula?",
+      choices: [
+        ["A=P(1+r)^t", true, "Standard model"],
+        ["A=Prt", false, "Simple interest"],
+        ["A=P+r^t", false, "Incorrect"],
+        ["A=P^rt", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "log-6",
+  topic: "Logarithms",
+  title: "Solve Log Equation",
+  stages: [
+    {
+      prompt: "Solve: log(x)=2",
+      question: "Rewrite in exponential form",
+      choices: [
+        ["x=100", true, "10²=100"],
+        ["x=20", false, "Incorrect"],
+        ["x=4", false, "Incorrect"],
+        ["x=2", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "exp-5",
+  topic: "Exponentials",
+  title: "Compare Rates",
+  stages: [
+    {
+      prompt: "Which grows faster?",
+      question: "Choose",
+      choices: [
+        ["2^x", true, "Exponential beats linear"],
+        ["5x", false, "Linear"],
+        ["x²", false, "Polynomial"],
+        ["x+10", false, "Linear"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "log-7",
+  topic: "Logarithms",
+  title: "Domain of Log",
+  stages: [
+    {
+      prompt: "Find domain: log(2x−6)",
+      question: "Restriction?",
+      choices: [
+        ["x>3", true, "2x−6>0"],
+        ["x≠3", false, "Too weak"],
+        ["x≥3", false, "Includes zero"],
+        ["x<3", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+/* =========================
+   TRIGONOMETRY (12)
+========================= */
+
+{
+  id: "trig-1",
+  topic: "Trigonometry",
+  title: "Radians",
+  stages: [
+    {
+      prompt: "Convert 180° to radians",
+      question: "Answer?",
+      choices: [
+        ["π", true, "180° = π"],
+        ["π/2", false, "90°"],
+        ["2π", false, "360°"],
+        ["1", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-2",
+  topic: "Trigonometry",
+  title: "Arc Length",
+  stages: [
+    {
+      prompt: "Find arc length if r=6, θ=π/2",
+      question: "Use formula a=rθ",
+      choices: [
+        ["3π", true, "6×π/2"],
+        ["6π", false, "Incorrect"],
+        ["π/12", false, "Incorrect"],
+        ["3", false, "Missing π"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-3",
+  topic: "Trigonometry",
+  title: "Unit Circle",
+  stages: [
+    {
+      prompt: "Find sin(π/2)",
+      question: "Value?",
+      choices: [
+        ["1", true, "Top of unit circle"],
+        ["0", false, "cos(π/2)"],
+        ["−1", false, "Incorrect"],
+        ["√2/2", false, "45°"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-4",
+  topic: "Trigonometry",
+  title: "Solve Trig",
+  stages: [
+    {
+      prompt: "Solve: cos x = 0, 0 ≤ x < 2π",
+      question: "Solutions?",
+      choices: [
+        ["π/2, 3π/2", true, "Cosine zeros"],
+        ["0, π", false, "Sine zeros"],
+        ["π", false, "Incomplete"],
+        ["None", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-5",
+  topic: "Trigonometry",
+  title: "Identity",
+  stages: [
+    {
+      prompt: "Simplify: tan x · cos x",
+      question: "Use identity tan=sin/cos",
+      choices: [
+        ["sin x", true, "cos cancels"],
+        ["cos x", false, "Incorrect"],
+        ["1", false, "Incorrect"],
+        ["tan x", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-6",
+  topic: "Trigonometry",
+  title: "Exact Values",
+  stages: [
+    {
+      prompt: "Find cos(π/3)",
+      question: "Value?",
+      choices: [
+        ["1/2", true, "Standard angle"],
+        ["√3/2", false, "sin(π/3)"],
+        ["0", false, "Incorrect"],
+        ["1", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-7",
+  topic: "Trigonometry",
+  title: "Quadrant",
+  stages: [
+    {
+      prompt: "sin x < 0 in which quadrants?",
+      question: "Answer",
+      choices: [
+        ["III and IV", true, "Below x-axis"],
+        ["I and II", false, "Positive"],
+        ["II and III", false, "Mixed"],
+        ["I and IV", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-8",
+  topic: "Trigonometry",
+  title: "Reference Angle",
+  stages: [
+    {
+      prompt: "Reference angle of 7π/6?",
+      question: "Value?",
+      choices: [
+        ["π/6", true, "Distance from π"],
+        ["π/3", false, "Incorrect"],
+        ["5π/6", false, "Incorrect"],
+        ["7π/6", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-9",
+  topic: "Trigonometry",
+  title: "Solve Sin",
+  stages: [
+    {
+      prompt: "Solve sin x = 0.5, 0≤x<2π",
+      question: "Solutions?",
+      choices: [
+        ["π/6, 5π/6", true, "Q I & II"],
+        ["π/6 only", false, "Incomplete"],
+        ["5π/6 only", false, "Incomplete"],
+        ["No solution", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-10",
+  topic: "Trigonometry",
+  title: "Identity",
+  stages: [
+    {
+      prompt: "Simplify: sin²x + cos²x",
+      question: "Value?",
+      choices: [
+        ["1", true, "Pythagorean identity"],
+        ["0", false, "Incorrect"],
+        ["sin x", false, "Incorrect"],
+        ["cos x", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-11",
+  topic: "Trigonometry",
+  title: "Tangent",
+  stages: [
+    {
+      prompt: "Find tan(π/4)",
+      question: "Value?",
+      choices: [
+        ["1", true, "sin/cos = 1"],
+        ["0", false, "Incorrect"],
+        ["√3", false, "tan(π/3)"],
+        ["√2", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "trig-12",
+  topic: "Trigonometry",
+  title: "Zeroes",
+  stages: [
+    {
+      prompt: "cos x = 1 at x = ?",
+      question: "Answer",
+      choices: [
+        ["0, 2π", true, "Maximum points"],
+        ["π", false, "cos = −1"],
+        ["π/2", false, "cos = 0"],
+        ["All x", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+/* =========================
+   POLYNOMIAL & RATIONAL (16)
+========================= */
+{
+  id: "poly-1",
+  topic: "Polynomials",
+  title: "Factor by GCF",
+  stages: [
+    {
+      prompt: "Factor completely: 6x^3 + 9x^2",
+      question: "Greatest common factor?",
+      choices: [
+        ["3x^2", true, "Both terms share 3x^2"],
+        ["6x^2", false, "Not common to both"],
+        ["3x", false, "Not greatest"],
+        ["x^2", false, "Missing 3"]
+      ]
+    },
+    {
+      question: "Final factored form?",
+      choices: [
+        ["3x^2(2x+3)", true, "Correct"],
+        ["6x^2(x+1.5)", false, "Not preferred form"],
+        ["x^2(6x+9)", false, "Not fully factored"],
+        ["3(2x^3+3x^2)", false, "Still has x^2 common"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-2",
+  topic: "Factoring",
+  title: "Difference of Squares",
+  stages: [
+    {
+      prompt: "Factor: 9x^2 - 49",
+      question: "Recognize the pattern",
+      choices: [
+        ["Difference of squares", true, "(3x)^2 - 7^2"],
+        ["Perfect square", false, "Minus sign"],
+        ["Trinomial", false, "Two terms"],
+        ["Prime", false, "It factors"]
+      ]
+    },
+    {
+      question: "Factored form?",
+      choices: [
+        ["(3x-7)(3x+7)", true, "Correct"],
+        ["(9x-49)(x+1)", false, "Incorrect"],
+        ["(3x-7)^2", false, "Wrong expansion"],
+        ["(x-7)(x+7)", false, "Missing 3"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-3",
+  topic: "Factoring",
+  title: "Perfect Square Trinomial",
+  stages: [
+    {
+      prompt: "Factor: x^2 - 10x + 25",
+      question: "What pattern is this?",
+      choices: [
+        ["Perfect square trinomial", true, "a^2 - 2ab + b^2"],
+        ["Difference of squares", false, "Three terms"],
+        ["Needs splitting", false, "Already square form"],
+        ["Prime", false, "It factors"]
+      ]
+    },
+    {
+      question: "Factored form?",
+      choices: [
+        ["(x-5)^2", true, "Correct"],
+        ["(x+5)^2", false, "Sign error"],
+        ["(x-25)(x-1)", false, "Incorrect"],
+        ["x(x-10)+25", false, "Not factored"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-4",
+  topic: "Factoring",
+  title: "Trinomial (Split Middle)",
+  stages: [
+    {
+      prompt: "Factor: x^2 + 3x - 10",
+      question: "Numbers multiply to -10 and add to 3?",
+      choices: [
+        ["5 and -2", true, "5×(-2)=-10, 5+(-2)=3"],
+        ["10 and -1", false, "Sum is 9"],
+        ["-5 and 2", false, "Sum is -3"],
+        ["-10 and 1", false, "Sum is -9"]
+      ]
+    },
+    {
+      question: "Factored form?",
+      choices: [
+        ["(x+5)(x-2)", true, "Correct"],
+        ["(x+10)(x-1)", false, "Incorrect"],
+        ["(x-5)(x+2)", false, "Incorrect"],
+        ["x(x+3)-10", false, "Not factored"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-5",
+  topic: "Factoring",
+  title: "Factor by Grouping",
+  stages: [
+    {
+      prompt: "Factor: x^3 + 2x^2 + 3x + 6",
+      question: "Best first move?",
+      choices: [
+        ["Group terms", true, "(x^3+2x^2)+(3x+6)"],
+        ["Quadratic formula", false, "Not applicable"],
+        ["Difference of squares", false, "Not the form"],
+        ["Prime", false, "It factors"]
+      ]
+    },
+    {
+      question: "Common factor in each group?",
+      choices: [
+        ["x^2 and 3", true, "x^2(x+2) and 3(x+2)"],
+        ["x and 6", false, "Doesn't match"],
+        ["x+2 and x+3", false, "Not correct grouping"],
+        ["None", false, "There is a common binomial"]
+      ]
+    },
+    {
+      question: "Final factored form?",
+      choices: [
+        ["(x+2)(x^2+3)", true, "Correct"],
+        ["(x+3)(x^2+2)", false, "Incorrect"],
+        ["x(x^2+2x+3)+6", false, "Not factored"],
+        ["(x+2)(x+3)", false, "Missing degree"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-6",
+  topic: "Polynomials",
+  title: "Solve by Factoring",
+  stages: [
+    {
+      prompt: "Solve: x^2 - 9 = 0",
+      question: "Best first step?",
+      choices: [
+        ["Factor", true, "Difference of squares"],
+        ["Quadratic formula", false, "Not needed"],
+        ["Complete the square", false, "Not needed"],
+        ["No solution", false, "Incorrect"]
+      ]
+    },
+    {
+      question: "Solutions?",
+      choices: [
+        ["x=3, -3", true, "(x-3)(x+3)=0"],
+        ["x=9, -9", false, "Square root error"],
+        ["x=0, 9", false, "Incorrect"],
+        ["x=±9", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-7",
+  topic: "Polynomials",
+  title: "Remainder Theorem",
+  stages: [
+    {
+      prompt: "Find remainder when f(x)=2x^3 - x + 5 is divided by (x-2)",
+      question: "Remainder equals:",
+      choices: [
+        ["f(2)", true, "Remainder Theorem"],
+        ["f(-2)", false, "Wrong input"],
+        ["2f(x)", false, "Incorrect"],
+        ["0", false, "Not always"]
+      ]
+    },
+    {
+      question: "Compute f(2)",
+      choices: [
+        ["19", true, "2(8)-2+5=16-2+5=19"],
+        ["21", false, "Arithmetic error"],
+        ["17", false, "Arithmetic error"],
+        ["5", false, "Ignored terms"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "poly-8",
+  topic: "Polynomials",
+  title: "Factor Theorem",
+  stages: [
+    {
+      prompt: "If (x-3) is a factor of f(x), then:",
+      question: "Which statement is true?",
+      choices: [
+        ["f(3)=0", true, "Factor Theorem"],
+        ["f(-3)=0", false, "Wrong input"],
+        ["f(0)=3", false, "Incorrect"],
+        ["f(3)=1", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-1",
+  topic: "Rational Functions",
+  title: "Restrictions",
+  stages: [
+    {
+      prompt: "State restrictions: f(x)= (x+1)/(x^2-9)",
+      question: "Denominator zero at:",
+      choices: [
+        ["x=3 and x=-3", true, "x^2-9=(x-3)(x+3)"],
+        ["x=9", false, "Wrong"],
+        ["x=1", false, "Numerator"],
+        ["No restrictions", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-2",
+  topic: "Rational Functions",
+  title: "Simplify Rational Expression",
+  stages: [
+    {
+      prompt: "Simplify: (x^2-9)/(x-3)",
+      question: "First step?",
+      choices: [
+        ["Factor numerator", true, "x^2-9=(x-3)(x+3)"],
+        ["Cancel x", false, "Not valid"],
+        ["Expand", false, "Opposite of simplify"],
+        ["No change", false, "It simplifies"]
+      ]
+    },
+    {
+      question: "Simplified form (with restriction)?",
+      choices: [
+        ["x+3, x≠3", true, "Cancel (x-3), keep restriction"],
+        ["x+3", false, "Missing restriction"],
+        ["x-3", false, "Incorrect"],
+        ["x^2+3", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-3",
+  topic: "Rational Functions",
+  title: "Add Rational Expressions",
+  stages: [
+    {
+      prompt: "Simplify: 1/x + 1/(2x)",
+      question: "LCD?",
+      choices: [
+        ["2x", true, "Both denominators divide 2x"],
+        ["x", false, "Doesn't cover 2x"],
+        ["2", false, "Missing x"],
+        ["x^2", false, "Too large"]
+      ]
+    },
+    {
+      question: "Final simplified form?",
+      choices: [
+        ["3/(2x)", true, "2/(2x)+1/(2x)=3/(2x)"],
+        ["2/(3x)", false, "Incorrect"],
+        ["1/x", false, "Incorrect"],
+        ["3/x", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-4",
+  topic: "Rational Functions",
+  title: "Multiply Rational Expressions",
+  stages: [
+    {
+      prompt: "Simplify: (x/3)·(9/x)",
+      question: "Simplified result?",
+      choices: [
+        ["3, x≠0", true, "Cancel x; 9/3=3"],
+        ["3", false, "Missing restriction"],
+        ["9/3x", false, "Incorrect"],
+        ["x", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-5",
+  topic: "Rational Functions",
+  title: "Complex Fraction",
+  stages: [
+    {
+      prompt: "Simplify: (1/x) ÷ (2/x)",
+      question: "Rewrite division as:",
+      choices: [
+        ["Multiply by reciprocal", true, "a/b ÷ c/d = a/b · d/c"],
+        ["Add fractions", false, "Incorrect"],
+        ["Subtract", false, "Incorrect"],
+        ["No change", false, "Incorrect"]
+      ]
+    },
+    {
+      question: "Final answer?",
+      choices: [
+        ["1/2, x≠0", true, "(1/x)(x/2)=1/2"],
+        ["1/2", false, "Missing restriction"],
+        ["2", false, "Inverted"],
+        ["x/2", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-6",
+  topic: "Rational Functions",
+  title: "Vertical Asymptote",
+  stages: [
+    {
+      prompt: "For f(x)=1/(x-4), vertical asymptote at:",
+      question: "Answer",
+      choices: [
+        ["x=4", true, "Denominator 0 at x=4"],
+        ["y=4", false, "Horizontal line"],
+        ["x=0", false, "Incorrect"],
+        ["y=0", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "rat-7",
+  topic: "Rational Functions",
+  title: "Hole vs Asymptote",
+  stages: [
+    {
+      prompt: "For f(x)=(x-2)/(x-2), there is a:",
+      question: "What feature at x=2?",
+      choices: [
+        ["Hole (removable discontinuity)", true, "Factor cancels completely"],
+        ["Vertical asymptote", false, "Doesn't blow up; it cancels"],
+        ["Horizontal asymptote", false, "Not about x=2"],
+        ["No issue", false, "Undefined at x=2"]
+      ]
+    }
+  ]
+},
+
+/* =========================
+   RATES OF CHANGE / CHARACTERISTICS (10)
+========================= */
+
+{
+  id: "roc-1",
+  topic: "Rates of Change",
+  title: "AROC Quadratic",
+  stages: [
+    {
+      prompt: "Find AROC of f(x)=x^2 from x=1 to x=5",
+      question: "Formula?",
+      choices: [
+        ["(f(b)-f(a))/(b-a)", true, "Definition of AROC"],
+        ["f'(x)", false, "Derivative not required"],
+        ["Rise×run", false, "Incorrect"],
+        ["Slope at a point", false, "Not average"]
+      ]
+    },
+    {
+      question: "Value?",
+      choices: [
+        ["6", true, "(25-1)/(4)=24/4=6"],
+        ["24", false, "Forgot divide by 4"],
+        ["4", false, "Incorrect"],
+        ["5", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "roc-2",
+  topic: "Rates of Change",
+  title: "Difference Quotient Setup",
+  stages: [
+    {
+      prompt: "For f(x)=3x+1, the difference quotient is:",
+      question: "Choose the correct expression",
+      choices: [
+        ["(f(x+h)-f(x))/h", true, "Definition"],
+        ["(f(x)-f(x+h))/h", false, "Sign reversed"],
+        ["f(x)/h", false, "Incorrect"],
+        ["(x+h)/h", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "roc-3",
+  topic: "Rates of Change",
+  title: "Difference Quotient Result",
+  stages: [
+    {
+      prompt: "For f(x)=3x+1, simplify the difference quotient",
+      question: "Final simplified value?",
+      choices: [
+        ["3", true, "Constant slope"],
+        ["3+h", false, "Incorrect"],
+        ["x", false, "Incorrect"],
+        ["1", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "char-1",
+  topic: "Characteristics",
+  title: "Domain",
+  stages: [
+    {
+      prompt: "Domain of f(x)=√(x-2)",
+      question: "Restriction?",
+      choices: [
+        ["x ≥ 2", true, "Radicand must be ≥0"],
+        ["x > 2", false, "2 is allowed"],
+        ["x ≠ 2", false, "Incorrect"],
+        ["All real", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "char-2",
+  topic: "Characteristics",
+  title: "Range Shift",
+  stages: [
+    {
+      prompt: "If y=x^2 has range y≥0, then y=x^2-5 has range:",
+      question: "Choose",
+      choices: [
+        ["y ≥ -5", true, "Shift down 5"],
+        ["y ≥ 5", false, "Wrong direction"],
+        ["y > -5", false, "Includes -5"],
+        ["All real", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "char-3",
+  topic: "Characteristics",
+  title: "Intercepts",
+  stages: [
+    {
+      prompt: "For f(x)=2x-6, x-intercept is:",
+      question: "Solve 2x-6=0",
+      choices: [
+        ["x=3", true, "2x=6"],
+        ["x=-3", false, "Sign error"],
+        ["x=6", false, "Incorrect"],
+        ["x=2", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "char-4",
+  topic: "Characteristics",
+  title: "Increasing/Decreasing",
+  stages: [
+    {
+      prompt: "For y=(x-1)^2, the function is decreasing on:",
+      question: "Choose interval",
+      choices: [
+        ["(-∞,1)", true, "Left of vertex"],
+        ["(1,∞)", false, "That’s increasing"],
+        ["All real", false, "Not monotonic"],
+        ["None", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "char-5",
+  topic: "Characteristics",
+  title: "Vertex Form",
+  stages: [
+    {
+      prompt: "In y=a(x-h)^2+k, the vertex is:",
+      question: "Choose",
+      choices: [
+        ["(h,k)", true, "Vertex coordinates"],
+        ["(a,k)", false, "Incorrect"],
+        ["(h,a)", false, "Incorrect"],
+        ["(0,k)", false, "Only when h=0"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "roc-4",
+  topic: "Rates of Change",
+  title: "AROC Linear",
+  stages: [
+    {
+      prompt: "Find AROC of f(x)= -4x+7 from x=2 to x=10",
+      question: "AROC equals:",
+      choices: [
+        ["-4", true, "Linear function slope"],
+        ["4", false, "Sign error"],
+        ["-32", false, "Not average"],
+        ["0", false, "Incorrect"]
+      ]
+    }
+  ]
+},
+
+{
+  id: "char-6",
+  topic: "Characteristics",
+  title: "Transformations",
+  stages: [
+    {
+      prompt: "y = f(x-3) shifts the graph:",
+      question: "Choose",
+      choices: [
+        ["Right 3", true, "x-3 shifts right"],
+        ["Left 3", false, "Opposite"],
+        ["Up 3", false, "Vertical shift"],
+        ["Down 3", false, "Vertical shift"]
+      ]
+    }
+  ]
+},
+];
+
+
+/* ---------------- RENDER ---------------- */
+function render() {
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  if (screen === "list") {
+    const progress = loadProgress();
+    app.innerHTML += `<div class="card"><div class="progress">
+      Problems completed: ${Object.keys(progress).length} / ${PROBLEMS.length}
+    </div></div><br>`;
+    PROBLEMS.forEach((p, i) => {
+      app.innerHTML += `
+        <div class="card" style="margin-bottom:12px">
+          <div class="tag">${p.topic}</div>
+          <h3>${p.title}</h3>
+          <button onclick="startProblem(${i})">
+            ${progress[p.id] ? "Practice Again" : "Start"}
+          </button>
+        </div>`;
+    });
+    return;
+  }
+
+  const problem = PROBLEMS[currentProblem];
+  const stage = problem.stages[stepIndex];
+
+  app.innerHTML += `
+  <div class="card">
+    <div class="row">
+      <button onclick="backStep()">← Back Step</button>
+      <button onclick="goList()">Back to Problems</button>
+    </div>
+
+    <div class="progress">Step ${stepIndex+1} / ${problem.stages.length} · ${problem.topic}</div>
+    ${stage.prompt ? `<h3>${stage.prompt}</h3>` : ""}
+    <h4>${stage.question}</h4>
+  `;
+
+  stage.choices.forEach((c, i) => {
+    let cls = "choice";
+    if (lastClick && lastClick.index === i) {
+      cls += lastClick.correct ? " correct" : " wrong";
+    }
+    app.innerHTML += `
+      <div class="${cls}" onclick="choose(${i})">${c[0]}</div>
+    `;
+  });
+
+  if (lastClick && lastClick.correct) {
+    app.innerHTML += `
+      <div class="feedback">
+        ✅ Correct — ${stage.choices[lastClick.index][2]}
+      </div>
+      <div class="row">
+        <button onclick="nextStep()">Next Step →</button>
+      </div>
+    `;
+  } else if (lastClick && !lastClick.correct) {
+    app.innerHTML += `
+      <div class="feedback">
+        ❌ Try again. ${stage.choices[lastClick.index][2]}
+      </div>
+    `;
+  }
+
+  app.innerHTML += `</div>`;
+}
+
+/* ---------------- ACTIONS ---------------- */
+function startProblem(i) {
+  currentProblem = i;
+  stepIndex = 0;
+  lastClick = null;
+  awaitingNext = false;
+  screen = "problem";
+  render();
+}
+function goList() {
+  screen = "list";
+  render();
+}
+function backStep() {
+  if (stepIndex > 0) {
+    stepIndex--;
+    lastClick = null;
+    awaitingNext = false;
+    render();
+  }
+}
+function choose(i) {
+  if (lastClick && lastClick.correct) return;
+
+  const stage = PROBLEMS[currentProblem].stages[stepIndex];
+  const isCorrect = stage.choices[i][1];
+
+  lastClick = { index: i, correct: isCorrect };
+
+  // 🔊 Play sound (user-initiated → allowed)
+  if (isCorrect) {
+    correctSound.currentTime = 0;
+    correctSound.play();
+  } else {
+    wrongSound.currentTime = 0;
+    wrongSound.play();
+  }
+
+  render();
+}
+
+function nextStep() {
+  lastClick = null;
+  stepIndex++;
+  if (stepIndex >= PROBLEMS[currentProblem].stages.length) {
+    const p = loadProgress();
+    p[PROBLEMS[currentProblem].id] = true;
+    saveProgress(p);
+    goList();
+    return;
+  }
+  render();
+}
+
+/* ---------------- INIT ---------------- */
+render();
+</script>
+</body>
+</html>
